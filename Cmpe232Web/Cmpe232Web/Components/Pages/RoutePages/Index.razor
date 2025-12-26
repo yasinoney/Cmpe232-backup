@@ -1,0 +1,75 @@
+﻿@page "/routes"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using DataAccess
+@using Cmpe232Web.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+
+<PageTitle>Routes - Index</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Routes List</h1>
+    <a href="routes/create" class="btn btn-primary">Create New</a>
+</div>
+
+<hr />
+
+@* --- SORU 3: Sıralama Linkleri --- *@
+<div class="mb-3">
+    <span class="me-2"><strong>Sıralama:</strong></span>
+    <a href="routes" class="btn btn-sm btn-outline-secondary">Varsayılan</a>
+    <a href="routes?sort=Distance" class="btn btn-sm btn-outline-secondary">En Uzun Mesafe</a>
+    <a href="routes?sort=Duration" class="btn btn-sm btn-outline-secondary">En Uzun Süre</a>
+</div>
+
+@* Tablo veriyi aşağıdaki IQueryable'dan alıyor *@
+<QuickGrid Class="table table-bordered table-striped" Items="@SortedRoutes">
+
+    <PropertyColumn Property="route => route.OriginCity" Title="Kalkış Şehri" />
+    <PropertyColumn Property="route => route.DestinationCity" Title="Varış Şehri" />
+    <PropertyColumn Property="route => route.TotalDistance" Title="Mesafe (KM)" />
+    <PropertyColumn Property="route => route.EstimatedDuration" Title="Süre (DK)" />
+
+    <TemplateColumn Context="route" Title="İşlemler">
+        <div class="btn-group">
+            <a href="@($"routes/edit?routeid={route.RouteID}")" class="btn btn-sm btn-warning">Edit</a>
+            <a href="@($"routes/details?routeid={route.RouteID}")" class="btn btn-sm btn-info">Details</a>
+            <a href="@($"routes/delete?routeid={route.RouteID}")" class="btn btn-sm btn-danger">Delete</a>
+        </div>
+    </TemplateColumn>
+
+</QuickGrid>
+
+@code {
+    private Cmpe232WebContext context = default!;
+
+    // URL'deki ?sort=... kısmını burası yakalar
+    [SupplyParameterFromQuery]
+    public string? sort { get; set; }
+
+    // --- SORU 3: LINQ Sıralama Sorgusu ---
+    private IQueryable<Route> SortedRoutes
+    {
+        get
+        {
+            // Veritabanı musluğunu açıyoruz
+            var query = context.Route.AsQueryable();
+
+            // URL'deki parametreye göre LINQ OrderBy ekliyoruz
+            return sort switch
+            {
+                "Distance" => query.OrderByDescending(r => r.TotalDistance),
+                "Duration" => query.OrderByDescending(r => r.EstimatedDuration),
+                _ => query.OrderBy(r => r.OriginCity) // Varsayılan: Şehre göre
+            };
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

@@ -1,0 +1,97 @@
+﻿@page "/routes/details"
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Route Details & Trips</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Route Information</h2>
+    <hr />
+    @if (route is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <dl class="row">
+            <dt class="col-sm-3">Origin City</dt>
+            <dd class="col-sm-9">@route.OriginCity</dd>
+
+            <dt class="col-sm-3">Destination City</dt>
+            <dd class="col-sm-9">@route.DestinationCity</dd>
+
+            <dt class="col-sm-3">Total Distance</dt>
+            <dd class="col-sm-9">@route.TotalDistance km</dd>
+
+            <dt class="col-sm-3">Estimated Duration</dt>
+            <dd class="col-sm-9">@route.EstimatedDuration min</dd>
+        </dl>
+
+        @* --- SORU 7: Join Operations (İlişkili Tabloyu Gösterme) --- *@
+        <div class="mt-5">
+            <h3>Scheduled Trips for this Route</h3>
+            <p class="text-muted">Bu tablo, Route ve Trips tablolarının JOIN edilmesiyle oluşturulmuştur.</p>
+
+            @if (route.Trips != null && route.Trips.Any())
+            {
+                <table class="table table-striped table-hover mt-3">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Trip ID</th>
+                            <th>Departure Time</th>
+                            <th>Arrival Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var trip in route.Trips)
+                        {
+                            <tr>
+                                <td>@trip.TripID</td>
+                                <td>@trip.ScheduledDeparture.ToString("g")</td>
+                                <td>@trip.ScheduledArrival.ToString("g")</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">Bu rotaya henüz atanmış bir sefer (trip) bulunmamaktadır.</div>
+            }
+        </div>
+
+        <div class="mt-4">
+            <a href="@($"/routes/edit?routeid={route.RouteID}")" class="btn btn-warning">Edit</a> |
+            <a href="@($"/routes")" class="btn btn-secondary">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Route? route;
+
+    [SupplyParameterFromQuery]
+    private int RouteID { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // --- SORU 7: LINQ JOIN (Include) ---
+        // .Include(r => r.Trips) diyerek Route getirilirken ona bağlı Trips verilerini de JOIN ediyoruz.
+        route = await context.Route
+            .Include(r => r.Trips)
+            .FirstOrDefaultAsync(m => m.RouteID == RouteID);
+
+        if (route is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

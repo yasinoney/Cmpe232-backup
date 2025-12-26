@@ -1,0 +1,94 @@
+﻿@page "/trips/create"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white"><h3>Sefer Atama Paneli</h3></div>
+        <div class="card-body">
+            @if (routes == null || buses == null)
+            {
+                <div class="alert alert-info">Veritabanına bağlanılıyor...</div>
+            }
+            else
+            {
+                <EditForm Model="tripDto" OnValidSubmit="HandleValidSubmit" FormName="create-trip-form">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">1. Rota Seçin:</label>
+                        <InputSelect @bind-Value="tripDto.RouteID" class="form-select border-primary">
+                            <option value="0">-- Rota Seçin --</option>
+                            @foreach (var r in routes)
+                            {
+                                <option value="@r.RouteID">@r.OriginCity ➔ @r.DestinationCity</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">2. Otobüs Atayın:</label>
+                        <InputSelect @bind-Value="tripDto.BusID" class="form-select border-primary">
+                            <option value="0">-- Otobüs Seçin --</option>
+                            @foreach (var b in buses)
+                            {
+                                <option value="@b.BusID">@b.Plate</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">3. Fiyat:</label>
+                        <InputNumber @bind-Value="tripDto.BaseFare" class="form-control" />
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Kalkış Zamanı:</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="tripDto.ScheduledDeparture" class="form-control" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success px-5">Kaydet</button>
+                    <a href="/trips" class="btn btn-outline-secondary">Vazgeç</a>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm] private TripDTO tripDto { get; set; } = new();
+    private List<Route>? routes;
+    private List<Bus>? buses;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        routes = await context.Set<Route>().ToListAsync();
+        buses = await context.Set<Bus>().ToListAsync();
+        tripDto ??= new();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (tripDto.RouteID == 0 || tripDto.BusID == 0) return;
+
+        using var context = DbFactory.CreateDbContext();
+        var newTrip = new Trip
+        {
+            RouteID = tripDto.RouteID,
+            BusID = tripDto.BusID,
+            BaseFare = tripDto.BaseFare,
+            ScheduledDeparture = tripDto.ScheduledDeparture ?? DateTime.Now,
+            ScheduledArrival = tripDto.ScheduledArrival ?? DateTime.Now.AddHours(4)
+        };
+
+        context.Set<Trip>().Add(newTrip);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/trips");
+    }
+}

@@ -1,0 +1,116 @@
+﻿@page "/buses"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Otobüs Filosu - Admin</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark"><i class="bi bi-truck"></i> Otobüs Filosu</h2>
+        <a href="/buses/create" class="btn btn-primary shadow-sm">
+            <span class="bi bi-plus-circle"></span> Yeni Otobüs Ekle
+        </a>
+    </div>
+
+    @if (buses == null)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Filo bilgileri yükleniyor...</p>
+        </div>
+    }
+    else if (!buses.Any())
+    {
+        <div class="alert alert-warning border-0 shadow-sm">
+            Filoda kayıtlı araç bulunamadı. Lütfen yeni bir otobüs ekleyin.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Plaka</th>
+                            <th>Model / Yıl</th>
+                            <th>Kapasite</th>
+                            <th>Durum</th>
+                            <th class="text-center">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in buses)
+                        {
+                            <tr>
+                                <td class="fw-bold text-uppercase">@b.Plate</td>
+                                <td>@b.Model (@b.Year)</td>
+                                <td><span class="badge bg-light text-dark border">@b.Capacity Koltuk</span></td>
+                                <td>
+                                    <span class="badge @(b.Status == "Active" ? "bg-success" : "bg-danger")">
+                                        @b.Status
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group shadow-sm">
+                                        @* --- YENİ EKLEDİĞİMİZ DETAY BUTONU --- *@
+                                        <a href="/buses/details/@b.BusID" class="btn btn-sm btn-info text-white">
+                                            <i class="bi bi-calendar-event"></i> Seferler
+                                        </a>
+
+                                        <a href="/buses/edit/@b.BusID" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i> Düzenle
+                                        </a>
+
+                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteBus(b.BusID)">
+                                            <i class="bi bi-trash"></i> Sil
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Bus>? buses;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBuses();
+    }
+
+    private async Task LoadBuses()
+    {
+        using var context = DbFactory.CreateDbContext();
+        buses = await context.Set<Bus>().ToListAsync();
+    }
+
+    private async Task DeleteBus(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        var bus = await context.Set<Bus>().FindAsync(id);
+
+        if (bus != null)
+        {
+            try
+            {
+                context.Set<Bus>().Remove(bus);
+                await context.SaveChangesAsync();
+                await LoadBuses();
+            }
+            catch (Exception)
+            {
+                // ER diyagramındaki Foreign Key kısıtlaması uyarısı
+                Console.WriteLine("Hata: Bu otobüse ait aktif seferler olduğu için silinemez.");
+            }
+        }
+    }
+}

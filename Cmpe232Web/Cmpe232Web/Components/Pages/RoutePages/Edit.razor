@@ -1,0 +1,148 @@
+﻿@page "/routes/edit"
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+<h2>Route</h2>
+<hr />
+
+@if (RouteModel is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            @* Model'i RouteModel (DTO) yaptık *@
+            <EditForm method="post" Model="RouteModel" OnValidSubmit="UpdateRoute" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert" />
+
+                @* ID'yi gizli tutuyoruz *@
+                <input type="hidden" name="RouteModel.RouteID" value="@RouteModel.RouteID" />
+
+                <div class="mb-3">
+                    <label for="origincity" class="form-label">OriginCity:</label>
+                    <InputText id="origincity" @bind-Value="RouteModel.OriginCity" class="form-control" />
+                    <ValidationMessage For="() => RouteModel.OriginCity" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="destinationcity" class="form-label">DestinationCity:</label>
+                    <InputText id="destinationcity" @bind-Value="RouteModel.DestinationCity" class="form-control" />
+                    <ValidationMessage For="() => RouteModel.DestinationCity" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="totaldistance" class="form-label">TotalDistance:</label>
+                    <InputNumber id="totaldistance" @bind-Value="RouteModel.TotalDistance" class="form-control" />
+                    <ValidationMessage For="() => RouteModel.TotalDistance" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="estimatedduration" class="form-label">EstimatedDuration:</label>
+                    <InputNumber id="estimatedduration" @bind-Value="RouteModel.EstimatedDuration" class="form-control" />
+                    <ValidationMessage For="() => RouteModel.EstimatedDuration" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/routes">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int RouteID { get; set; }
+
+    // Formun bağlı olduğu hafif nesne
+    [SupplyParameterFromForm]
+    private RouteDTO? RouteModel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // 1. Veritabanından gerçek veriyi çekiyoruz
+        var dbRoute = await context.Route.FirstOrDefaultAsync(m => m.RouteID == RouteID);
+
+        if (dbRoute is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+        else
+        {
+            // 2. Eğer form henüz dolmamışsa (ilk açılış), DB'den gelen veriyi DTO'ya kopyala
+            RouteModel ??= new RouteDTO
+            {
+                RouteID = dbRoute.RouteID,
+                OriginCity = dbRoute.OriginCity,
+                DestinationCity = dbRoute.DestinationCity,
+                TotalDistance = dbRoute.TotalDistance,
+                EstimatedDuration = dbRoute.EstimatedDuration
+            };
+        }
+    }
+
+    private async Task UpdateRoute()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // 3. Güncellenecek gerçek nesneyi veritabanından bul
+        var routeToUpdate = await context.Route.FirstOrDefaultAsync(m => m.RouteID == RouteID);
+
+        if (routeToUpdate is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        // 4. Formdan (DTO) gelen yeni verileri gerçek nesneye aktar
+        routeToUpdate.OriginCity = RouteModel!.OriginCity;
+        routeToUpdate.DestinationCity = RouteModel.DestinationCity;
+        routeToUpdate.TotalDistance = RouteModel.TotalDistance;
+        routeToUpdate.EstimatedDuration = RouteModel.EstimatedDuration;
+
+        // 5. Döngüsel hatayı (recursion) önlemek için ilişkili listeleri null yap
+        routeToUpdate.Route_Stop_Assignment = null;
+        routeToUpdate.Trips = null;
+
+        try
+        {
+            // 6. Güncelle ve kaydet
+            context.Route.Update(routeToUpdate);
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!RouteExists(RouteModel.RouteID))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else { throw; }
+        }
+
+        NavigationManager.NavigateTo("/routes");
+    }
+
+    private bool RouteExists(int routeid)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Route.Any(e => e.RouteID == routeid);
+    }
+
+    // Döngüsel referansı kıran hafif veri sınıfı
+    public class RouteDTO
+    {
+        public int RouteID { get; set; }
+        public string? OriginCity { get; set; }
+        public string? DestinationCity { get; set; }
+        public int? TotalDistance { get; set; }
+        public int? EstimatedDuration { get; set; }
+    }
+}

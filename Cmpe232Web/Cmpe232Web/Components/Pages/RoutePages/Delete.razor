@@ -1,0 +1,67 @@
+﻿@page "/routes/delete"
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Delete</PageTitle>
+
+<h1>Delete</h1>
+
+<p>Are you sure you want to delete this?</p>
+<div>
+    <h2>Route</h2>
+    <hr />
+    @if (route is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">OriginCity</dt>
+            <dd class="col-sm-10">@route.OriginCity</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">DestinationCity</dt>
+            <dd class="col-sm-10">@route.DestinationCity</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">TotalDistance</dt>
+            <dd class="col-sm-10">@route.TotalDistance</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">EstimatedDuration</dt>
+            <dd class="col-sm-10">@route.EstimatedDuration</dd>
+        </dl>
+        <EditForm method="post" Model="route" OnValidSubmit="DeleteRoute" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(route is null)">Delete</button> |
+            <a href="/routes">Back to List</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Route? route;
+
+    [SupplyParameterFromQuery]
+    private int RouteID { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        route = await context.Route.FirstOrDefaultAsync(m => m.RouteID == RouteID);
+
+        if (route is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task DeleteRoute()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Route.Remove(route!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/routes");
+    }
+}

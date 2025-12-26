@@ -1,0 +1,91 @@
+﻿@page "/routes/create"
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Route</PageTitle>
+
+<h1>Create</h1>
+<h2>Route</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        @* Model'i artık ağır olan 'Route' yerine 'RouteModel' (DTO) yaptık *@
+        <EditForm method="post" Model="RouteModel" OnValidSubmit="AddRoute" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-3">
+                <label for="origincity" class="form-label">Origin City:</label>
+                <InputText id="origincity" @bind-Value="RouteModel.OriginCity" class="form-control" />
+                <ValidationMessage For="() => RouteModel.OriginCity" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="destinationcity" class="form-label">Destination City:</label>
+                <InputText id="destinationcity" @bind-Value="RouteModel.DestinationCity" class="form-control" />
+                <ValidationMessage For="() => RouteModel.DestinationCity" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="totaldistance" class="form-label">Total Distance:</label>
+                <InputNumber id="totaldistance" @bind-Value="RouteModel.TotalDistance" class="form-control" />
+                <ValidationMessage For="() => RouteModel.TotalDistance" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="estimatedduration" class="form-label">Estimated Duration:</label>
+                <InputNumber id="estimatedduration" @bind-Value="RouteModel.EstimatedDuration" class="form-control" />
+                <ValidationMessage For="() => RouteModel.EstimatedDuration" class="text-danger" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/routes">Back to List</a>
+</div>
+
+@code {
+    // Formdan gelen verileri tutacak hafif nesne
+    [SupplyParameterFromForm]
+    private RouteDTO RouteModel { get; set; } = new();
+
+    // Veri Ekleme İş Akışı (Soru 8) [cite: 16]
+    private async Task AddRoute()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // 1. DTO'daki verileri gerçek 'Route' nesnesine aktarıyoruz (Soru 4) [cite: 7]
+        // Bu işlem döngüsel referans (recursion) hatasını kökten çözer
+        var realRoute = new Route
+        {
+            OriginCity = RouteModel.OriginCity,
+            DestinationCity = RouteModel.DestinationCity,
+            TotalDistance = RouteModel.TotalDistance,
+            EstimatedDuration = RouteModel.EstimatedDuration
+        };
+
+        // 2. Veritabanına temiz nesneyi ekliyoruz
+        context.Route.Add(realRoute);
+
+        // 3. Değişiklikleri kaydediyoruz (Transaction Yönetimi) [cite: 17]
+        await context.SaveChangesAsync();
+
+        // 4. Liste sayfasına yönlendiriyoruz
+        NavigationManager.NavigateTo("/routes");
+    }
+
+    // Döngü hatasını kırmak için oluşturduğumuz basit veri taşıma sınıfı (DTO)
+    public class RouteDTO
+    {
+        public string? OriginCity { get; set; }
+        public string? DestinationCity { get; set; }
+        public int? TotalDistance { get; set; }
+        public int? EstimatedDuration { get; set; }
+    }
+}

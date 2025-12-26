@@ -1,0 +1,80 @@
+﻿@page "/trips/edit/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <h3>Seferi Düzenle (#@Id)</h3>
+    <EditForm Model="tripDto" OnValidSubmit="HandleUpdate" FormName="edit-trip-form">
+        <div class="mb-3">
+            <label>Rota:</label>
+            <InputSelect @bind-Value="tripDto.RouteID" class="form-select">
+                @if (routes != null)
+                {
+                    @foreach (var r in routes)
+                    {
+                        <option value="@r.RouteID">@r.OriginCity ➔ @r.DestinationCity</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <label>Kalkış:</label>
+                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="tripDto.ScheduledDeparture" class="form-control" />
+            </div>
+            <div class="col">
+                <label>Fiyat:</label>
+                <InputNumber @bind-Value="tripDto.BaseFare" class="form-control" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-warning">Güncelle</button>
+        <a href="/trips" class="btn btn-secondary">Vazgeç</a>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [SupplyParameterFromForm] private TripDTO tripDto { get; set; } = new();
+    private List<Route>? routes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        routes = await context.Set<Route>().ToListAsync();
+
+        var trip = await context.Set<Trip>().FindAsync(Id);
+        if (trip != null && tripDto.RouteID == 0)
+        {
+            tripDto.RouteID = trip.RouteID;
+            tripDto.ScheduledDeparture = trip.ScheduledDeparture;
+            tripDto.ScheduledArrival = trip.ScheduledArrival;
+            tripDto.BaseFare = trip.BaseFare;
+            tripDto.BusID = trip.BusID;
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        using var context = DbFactory.CreateDbContext();
+        var existingTrip = await context.Set<Trip>().FindAsync(Id);
+
+        if (existingTrip != null)
+        {
+            existingTrip.RouteID = tripDto.RouteID;
+            existingTrip.BaseFare = tripDto.BaseFare;
+            existingTrip.BusID = tripDto.BusID;
+
+            // IMG_9375 hatasını çözen güvenli tarih ataması
+            existingTrip.ScheduledDeparture = tripDto.ScheduledDeparture ?? DateTime.Now;
+            existingTrip.ScheduledArrival = tripDto.ScheduledArrival ?? DateTime.Now.AddHours(4);
+
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/trips");
+        }
+    }
+}

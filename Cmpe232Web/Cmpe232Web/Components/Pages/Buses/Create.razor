@@ -1,0 +1,74 @@
+﻿@page "/buses/create"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="card shadow border-0">
+        <div class="card-header bg-dark text-white"><h3><i class="bi bi-plus-circle"></i> Yeni Otobüs Ekle</h3></div>
+        <div class="card-body">
+            <EditForm Model="busDto" OnValidSubmit="HandleSubmit" FormName="create-bus-form">
+                <DataAnnotationsValidator />
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Plaka (Plate):</label>
+                        <InputText @bind-Value="busDto.Plate" class="form-control text-uppercase" placeholder="06 TED 06" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Model:</label>
+                        <InputText @bind-Value="busDto.Model" class="form-control" placeholder="Travego / Tourismo" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Kapasite:</label>
+                        <InputNumber @bind-Value="busDto.Capacity" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Üretim Yılı:</label>
+                        <InputNumber @bind-Value="busDto.Year" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Durum:</label>
+                        <InputSelect @bind-Value="busDto.Status" class="form-select">
+                            <option value="Active">Aktif</option>
+                            <option value="Maintenance">Bakımda</option>
+                            <option value="Retired">Servis Dışı</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success px-5">Sisteme Kaydet</button>
+                    <a href="/buses" class="btn btn-outline-secondary">Vazgeç</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm] private BusDTO busDto { get; set; } = new();
+
+    private async Task HandleSubmit()
+    {
+        using var context = DbFactory.CreateDbContext();
+        var newBus = new Bus
+        {
+            Plate = busDto.Plate,
+            Model = busDto.Model,
+            Capacity = busDto.Capacity ?? 40, // Eğer boşsa varsayılan 40
+            Status = busDto.Status,
+            Year = busDto.Year
+        };
+
+        context.Set<Bus>().Add(newBus);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/buses");
+    }
+}

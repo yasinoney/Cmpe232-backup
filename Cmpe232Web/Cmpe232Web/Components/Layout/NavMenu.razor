@@ -1,0 +1,46 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Cmpe232Web</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        @* 1. ANA SAYFA *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        @* 2. ROTA YÖNETİMİ *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="routes">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Route
+            </NavLink>
+        </div>
+
+        @* 3. SEFER LİSTESİ (YENİ - Silme ve Düzenleme Buradan Yapılır) *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="trips">
+                <span class="bi bi-list-ul-nav-menu" aria-hidden="true"></span> Sefer Yönetimi
+            </NavLink>
+        </div>
+
+        @* 4. YENİ SEFER EKLEME *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="trips/create">
+                <span class="bi bi-calendar-plus-fill-nav-menu" aria-hidden="true"></span> Sefer Atama
+            </NavLink>
+        </div>
+
+        @* 5. HAVA DURUMU (Varsayılan) *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            </NavLink>
+        </div>
+    </nav>
+</div>

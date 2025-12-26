@@ -1,0 +1,73 @@
+﻿@page "/buses/edit/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="card shadow border-warning">
+        <div class="card-header bg-warning text-dark"><h3><i class="bi bi-pencil-square"></i> Otobüs Düzenle (#@Id)</h3></div>
+        <div class="card-body">
+            <EditForm Model="busDto" OnValidSubmit="HandleUpdate" FormName="edit-bus-form">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Plaka:</label>
+                        <InputText @bind-Value="busDto.Plate" class="form-control text-uppercase" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Durum:</label>
+                        <InputSelect @bind-Value="busDto.Status" class="form-select">
+                            <option value="Active">Aktif</option>
+                            <option value="Maintenance">Bakımda</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-warning px-4">Değişiklikleri Güncelle</button>
+                    <a href="/buses" class="btn btn-secondary">Vazgeç</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [SupplyParameterFromForm] private BusDTO busDto { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        var bus = await context.Set<Bus>().FindAsync(Id);
+
+        if (bus != null && string.IsNullOrEmpty(busDto.Plate))
+        {
+            busDto.Plate = bus.Plate;
+            busDto.Model = bus.Model;
+            busDto.Capacity = bus.Capacity;
+            busDto.Status = bus.Status;
+            busDto.Year = bus.Year;
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        using var context = DbFactory.CreateDbContext();
+        var existingBus = await context.Set<Bus>().FindAsync(Id);
+
+        if (existingBus != null)
+        {
+            existingBus.Plate = busDto.Plate;
+            existingBus.Model = busDto.Model;
+            existingBus.Capacity = busDto.Capacity;
+            existingBus.Status = busDto.Status;
+            existingBus.Year = busDto.Year;
+
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/buses");
+        }
+    }
+}

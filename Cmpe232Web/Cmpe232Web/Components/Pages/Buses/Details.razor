@@ -1,0 +1,87 @@
+﻿@page "/buses/details/{Id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    @if (bus == null)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Otobüs ve sefer bilgileri yükleniyor...</p>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-info-circle"></i> @bus.Plate Sefer Geçmişi</h3>
+            <a href="/buses" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+
+        @* Otobüs Özet Kartı *@
+        <div class="card shadow-sm mb-4 border-0 bg-light">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>Model:</strong> @bus.Model</div>
+                    <div class="col-md-3"><strong>Kapasite:</strong> @bus.Capacity Kişi</div>
+                    <div class="col-md-3"><strong>Yıl:</strong> @bus.Year</div>
+                    <div class="col-md-3"><strong>Durum:</strong> <span class="badge bg-success">@bus.Status</span></div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mb-3">Bu Otobüse Atanmış Seferler</h4>
+
+        @if (bus.Trips == null || !bus.Trips.Any())
+        {
+            <div class="alert alert-info">Bu otobüse henüz bir sefer atanmamış.</div>
+        }
+        else
+        {
+            <div class="table-responsive shadow-sm rounded">
+                <table class="table table-hover align-middle bg-white">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Sefer ID</th>
+                            <th>Güzergah</th>
+                            <th>Kalkış Zamanı</th>
+                            <th>Fiyat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in bus.Trips)
+                        {
+                            <tr>
+                                <td>#@t.TripID</td>
+                                <td>
+                                    @* Route bilgisini de Include ettiğimiz için şehirleri görebiliriz *@
+                                    <span class="badge bg-dark">@t.Route?.OriginCity ➔ @t.Route?.DestinationCity</span>
+                                </td>
+                                <td>@t.ScheduledDeparture.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="fw-bold text-success">@t.BaseFare TL</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Bus? bus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // KRİTİK: Hem Trips koleksiyonunu hem de her seferin Route bilgisini çekiyoruz (Nested Include)
+        bus = await context.Set<Bus>()
+            .Include(b => b.Trips)
+                .ThenInclude(t => t.Route)
+            .FirstOrDefaultAsync(b => b.BusID == Id);
+    }
+}

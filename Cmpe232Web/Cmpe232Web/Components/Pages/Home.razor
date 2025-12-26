@@ -1,0 +1,60 @@
+﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@using Cmpe232Web.Data
+@inject IDbContextFactory<Cmpe232WebContext> DbFactory
+
+<PageTitle>Kamil Koç - Dashboard</PageTitle>
+
+<div class="container mt-5">
+    <div class="p-5 mb-4 bg-light rounded-3 border shadow-sm text-center">
+        <h1 class="display-5 fw-bold text-primary">Yönetim Paneline Hoş Geldiniz</h1>
+        <p class="fs-4">Sistemdeki güncel istatistikler aşağıdadır.</p>
+        <a href="/routes" class="btn btn-primary">Rotaları Listele</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <h3>Toplam Rota</h3>
+                    <div class="display-4">@totalRoutes</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <h3>Aktif Sefer (Trip)</h3>
+                    <div class="display-4">@totalTrips</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalRoutes = 0;
+    private int totalTrips = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+
+            // Rota sayısını çek
+            totalRoutes = await context.Route.CountAsync();
+
+            // --- EN GARANTİ YÖNTEM ---
+            // context.Trip veya context.Trips yerine doğrudan model üzerinden erişiyoruz
+            totalTrips = await context.Set<Trip>().CountAsync();
+        }
+        catch (Exception ex)
+        {
+            // Eğer hala hata veriyorsa terminale (Console) hatayı yazar
+            Console.WriteLine("Hata: " + ex.Message);
+        }
+    }
+}
