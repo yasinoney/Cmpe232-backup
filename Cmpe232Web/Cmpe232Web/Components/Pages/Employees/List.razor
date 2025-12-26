@@ -1,0 +1,80 @@
+﻿@page "/employees"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary">Sistem Personel Listesi</h2>
+        <a href="/employees/create" class="btn btn-success">+ Yeni Personel Ekle</a>
+    </div>
+
+    @if (employees == null)
+    {
+        <div class="alert alert-info">Veriler yükleniyor...</div>
+    }
+    else
+    {
+        <table class="table table-hover shadow-sm border">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Ad Soyad</th>
+                    <th>İşe Giriş</th>
+                    <th>İletişim</th>
+                    <th class="text-center">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in employees)
+                {
+                    <tr>
+                        <td>@emp.EmployeeID</td>
+                        <td class="fw-bold">@emp.Name</td>
+                        <td>@emp.HireDate.ToShortDateString()</td>
+                        <td>@emp.ContactInfo</td>
+                        <td class="text-center">
+                            @* Düzenleme sayfasına ID gönderiyoruz *@
+                            <a href="/employees/edit/@emp.EmployeeID" class="btn btn-sm btn-outline-primary me-2">Düzenle</a>
+
+                            @* Silme işlemi için onay alıp metodu çağırıyoruz *@
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmployee(emp.EmployeeID)">Sil</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<Employee>? employees;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        using var context = DbFactory.CreateDbContext();
+        employees = await context.Set<Employee>().ToListAsync(); //
+    }
+
+    private async Task DeleteEmployee(int id)
+    {
+        // Basit bir JS onayı alalım
+        // Not: Gerçek projede daha şık bir modal kullanılabilir
+        using var context = DbFactory.CreateDbContext();
+        var emp = await context.Set<Employee>().FindAsync(id); //
+
+        if (emp != null)
+        {
+            context.Set<Employee>().Remove(emp); //
+            await context.SaveChangesAsync();
+            await LoadEmployees(); // Listeyi yenile
+        }
+    }
+}

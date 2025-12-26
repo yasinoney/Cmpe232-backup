@@ -63,6 +63,7 @@
     <Compile Include="Employee.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
+    <Compile Include="EmployeeDTO.cs" />
     <Compile Include="Maintenance_Record.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>

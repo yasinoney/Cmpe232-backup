@@ -1,0 +1,70 @@
+﻿@page "/employees/edit/{id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using DataAccess
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<Cmpe232Web.Data.Cmpe232WebContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>Personel Bilgilerini Güncelle</h3>
+        </div>
+        <div class="card-body">
+            @if (employee == null)
+            {
+                <p>Veri yükleniyor...</p>
+            }
+            else
+            {
+                <EditForm Model="employee" OnValidSubmit="HandleUpdate">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ad Soyad:</label>
+                        <InputText @bind-Value="employee.Name" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">İşe Giriş Tarihi:</label>
+                        <InputDate @bind-Value="employee.HireDate" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">İletişim Bilgileri:</label>
+                        <InputTextArea @bind-Value="employee.ContactInfo" class="form-control" />
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary px-5">Güncelle</button>
+                        <a href="/employees" class="btn btn-outline-secondary">Vazgeç</a>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int id { get; set; } // URL'den gelen ID
+    private Employee? employee;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        // Düzenlenecek personeli ID ile buluyoruz
+        employee = await context.Set<Employee>().FindAsync(id);
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (employee == null) return;
+
+        using var context = DbFactory.CreateDbContext();
+        context.Set<Employee>().Update(employee); // Veriyi güncelliyoruz
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/employees");
+    }
+}

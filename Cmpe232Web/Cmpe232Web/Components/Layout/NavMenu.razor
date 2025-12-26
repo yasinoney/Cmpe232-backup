@@ -1,6 +1,6 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Cmpe232Web</a>
+        <a class="navbar-brand" href="">Cmpe232 Bus Panel</a>
     </div>
 </div>
 
@@ -15,32 +15,44 @@
             </NavLink>
         </div>
 
-        @* 2. ROTA YÖNETİMİ *@
+        <hr class="text-white opacity-25 mx-3" />
+
+        @* 2. PERSONEL YÖNETİMİ (YENİ) *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="employees">
+                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Personel Listesi
+            </NavLink>
+        </div>
+
+        @* 3. OTOBÜS YÖNETİMİ (YENİ) *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="buses">
+                <span class="bi bi-bus-front-fill-nav-menu" aria-hidden="true"></span> Otobüs Yönetimi
+            </NavLink>
+        </div>
+
+        @* 4. ROTA YÖNETİMİ *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="routes">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Route
+                <span class="bi bi-map-fill-nav-menu" aria-hidden="true"></span> Rotalar
             </NavLink>
         </div>
 
-        @* 3. SEFER LİSTESİ (YENİ - Silme ve Düzenleme Buradan Yapılır) *@
+        <hr class="text-white opacity-25 mx-3" />
+
+        @* 5. SEFER YÖNETİMİ *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="trips">
-                <span class="bi bi-list-ul-nav-menu" aria-hidden="true"></span> Sefer Yönetimi
+                <span class="bi bi-list-ul-nav-menu" aria-hidden="true"></span> Sefer Listesi
             </NavLink>
         </div>
 
-        @* 4. YENİ SEFER EKLEME *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="trips/create">
-                <span class="bi bi-calendar-plus-fill-nav-menu" aria-hidden="true"></span> Sefer Atama
+                <span class="bi bi-calendar-plus-fill-nav-menu" aria-hidden="true"></span> Yeni Sefer Planla
             </NavLink>
         </div>
 
-        @* 5. HAVA DURUMU (Varsayılan) *@
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+ 
     </nav>
 </div>
