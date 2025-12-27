@@ -30,6 +30,39 @@
                     <InputTextArea @bind-Value="newEmployee.ContactInfo" class="form-control" placeholder="Telefon, Adres veya Email..." />
                 </div>
 
+                <hr />
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="isDriverCheck" @bind="isDriver">
+                    <label class="form-check-label fw-bold text-primary" for="isDriverCheck">
+                        Bu Personel Şoför mü?
+                    </label>
+                </div>
+
+                @if (isDriver)
+                {
+                    <div class="p-3 bg-light border rounded mb-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Ehliyet Numarası:</label>
+                            <InputText @bind-Value="licenseNumber" class="form-control" placeholder="Örn: E-12345" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Bağlı Olduğu Yönetici (Supervisor):</label>
+                            <InputSelect @bind-Value="supervisorID" class="form-select">
+                                <option value="0">-- Yönetici Seç --</option>
+                                @if (supervisors != null)
+                                {
+                                    @foreach (var sup in supervisors)
+                                    {
+                                        <option value="@sup.EmployeeID">@sup.Username (@sup.Employee?.Name)</option>
+                                    }
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                }
+
                 <div class="mt-4">
                     <button type="submit" class="btn btn-success px-5">Personeli Kaydet</button>
                     <a href="/employees" class="btn btn-outline-secondary">Vazgeç</a>
@@ -40,18 +73,54 @@
 </div>
 
 @code {
-    // Direkt orijinal Employee modelini kullanıyoruz
     private Employee newEmployee = new() { HireDate = DateTime.Now };
+    private bool isDriver = false; //
+    private string licenseNumber = ""; //
+    private int supervisorID = 0; //
+    private List<Supervisor>? supervisors; //
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        // Dropdown için mevcut yöneticileri çekiyoruz
+        supervisors = await context.Set<Supervisor>().Include(s => s.Employee).ToListAsync();
+    }
 
     private async Task HandleValidSubmit()
     {
-        using var context = DbFactory.CreateDbContext();
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
 
-        // Sadece ana çalışan bilgilerini kaydediyoruz
-        context.Set<Employee>().Add(newEmployee);
-        await context.SaveChangesAsync();
+            // 1. Personel Kaydı
+            context.Set<Employee>().Add(newEmployee);
+            await context.SaveChangesAsync();
 
-        // Kayıttan sonra çalışan listesine yönlendiriyoruz
-        NavigationManager.NavigateTo("/employees");
+            // 2. Şoför Kaydı (Eğer seçildiyse)
+            if (isDriver && supervisorID != 0)
+            {
+                var newDriver = new Driver
+                {
+                    EmployeeID = newEmployee.EmployeeID,
+                    LicenseNumber = licenseNumber,
+                    SupervisorEmployeeID = supervisorID
+                };
+                context.Set<Driver>().Add(newDriver);
+                await context.SaveChangesAsync();
+            }
+
+            // 3. YÖNLENDİRME (Burayı güncelledik)
+            // forceLoad: true diyerek sayfayı tamamen tazeleyip listeye uçuruyoruz
+            NavigationManager.NavigateTo("/employees", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            // Hata olursa en azından sayfada kalıp hatayı görebilelim
+            Console.WriteLine($"Kanka kayıt yapıldı ama yönlendirmede pürüz çıktı: {ex.Message}");
+
+            // Eğer veritabanına eklendiyse ama yine de buraya düştüyse,
+            // kullanıcıyı manuel olarak yönlendirmeyi deniyoruz
+            NavigationManager.NavigateTo("/employees", forceLoad: true);
+        }
     }
 }

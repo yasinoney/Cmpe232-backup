@@ -101,6 +101,7 @@
     <Compile Include="Supervisor.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
+    <Compile Include="SupervisorDTO.cs" />
     <Compile Include="Trip.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>

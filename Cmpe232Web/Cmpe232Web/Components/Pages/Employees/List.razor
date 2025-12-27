@@ -6,46 +6,63 @@
 @inject NavigationManager NavigationManager
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="text-primary">Sistem Personel Listesi</h2>
-        <a href="/employees/create" class="btn btn-success">+ Yeni Personel Ekle</a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold">Sistem Personel Listesi</h2>
+        <a href="/employees/create" class="btn btn-success shadow-sm">+ Yeni Personel Ekle</a>
     </div>
 
     @if (employees == null)
     {
-        <div class="alert alert-info">Veriler yükleniyor...</div>
+        <div class="alert alert-info shadow-sm">Veriler veritabanından getiriliyor, lütfen bekleyin...</div>
     }
     else
     {
-        <table class="table table-hover shadow-sm border">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Ad Soyad</th>
-                    <th>İşe Giriş</th>
-                    <th>İletişim</th>
-                    <th class="text-center">İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var emp in employees)
-                {
-                    <tr>
-                        <td>@emp.EmployeeID</td>
-                        <td class="fw-bold">@emp.Name</td>
-                        <td>@emp.HireDate.ToShortDateString()</td>
-                        <td>@emp.ContactInfo</td>
-                        <td class="text-center">
-                            @* Düzenleme sayfasına ID gönderiyoruz *@
-                            <a href="/employees/edit/@emp.EmployeeID" class="btn btn-sm btn-outline-primary me-2">Düzenle</a>
-
-                            @* Silme işlemi için onay alıp metodu çağırıyoruz *@
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmployee(emp.EmployeeID)">Sil</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="card shadow border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0 border">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Ad Soyad</th>
+                            <th>Durum</th> @* Şoför olup olmadığını burada göreceğiz *@
+                            <th>İşe Giriş</th>
+                            <th>İletişim</th>
+                            <th class="text-center">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var emp in employees)
+                        {
+                            <tr>
+                                <td class="fw-bold">@emp.EmployeeID</td>
+                                <td class="text-secondary">@emp.Name</td>
+                                <td>
+                                    @* Personelin Driver tablosunda kaydı olup olmadığını kontrol ediyoruz *@
+                                    @if (emp.Driver != null)
+                                    {
+                                        <span class="badge bg-info text-dark shadow-sm">
+                                            🚛 Şoför
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-secondary border">
+                                            Personel
+                                        </span>
+                                    }
+                                </td>
+                                <td>@emp.HireDate.ToShortDateString()</td>
+                                <td><small class="text-muted">@emp.ContactInfo</small></td>
+                                <td class="text-center">
+                                    <a href="/employees/edit/@emp.EmployeeID" class="btn btn-sm btn-outline-primary me-2">Düzenle</a>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEmployee(emp.EmployeeID)">Sil</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
 </div>
 
@@ -60,21 +77,24 @@
     private async Task LoadEmployees()
     {
         using var context = DbFactory.CreateDbContext();
-        employees = await context.Set<Employee>().ToListAsync(); //
+
+        // KRİTİK NOKTA: .Include(e => e.Driver) ekleyerek iki tabloyu birbirine bağlıyoruz
+        employees = await context.Set<Employee>()
+            .Include(e => e.Driver)
+            .OrderByDescending(e => e.EmployeeID) // En son eklediğimiz en üstte görünsün
+            .ToListAsync();
     }
 
     private async Task DeleteEmployee(int id)
     {
-        // Basit bir JS onayı alalım
-        // Not: Gerçek projede daha şık bir modal kullanılabilir
         using var context = DbFactory.CreateDbContext();
-        var emp = await context.Set<Employee>().FindAsync(id); //
+        var emp = await context.Set<Employee>().FindAsync(id);
 
         if (emp != null)
         {
-            context.Set<Employee>().Remove(emp); //
+            context.Set<Employee>().Remove(emp);
             await context.SaveChangesAsync();
-            await LoadEmployees(); // Listeyi yenile
+            await LoadEmployees(); // Listeyi otomatik yeniliyoruz
         }
     }
 }
